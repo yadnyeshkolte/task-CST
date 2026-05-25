@@ -14,18 +14,31 @@ const allowedOrigins = [
   'http://127.0.0.1:5173',
 ].filter(Boolean)
 
-app.use(
+function isAllowedOrigin(origin, requestHost) {
+  if (!origin || process.env.NODE_ENV !== 'production' || allowedOrigins.includes(origin)) {
+    return true
+  }
+
+  try {
+    const originHost = new URL(origin).host
+    return originHost === requestHost || originHost.endsWith('.vercel.app')
+  } catch {
+    return false
+  }
+}
+
+app.use((req, res, next) => {
   cors({
     origin(origin, callback) {
-      if (!origin || process.env.NODE_ENV !== 'production' || allowedOrigins.includes(origin)) {
+      if (isAllowedOrigin(origin, req.headers.host)) {
         callback(null, true)
         return
       }
 
       callback(new Error('Origin is not allowed by CORS.'))
     },
-  }),
-)
+  })(req, res, next)
+})
 
 app.use(express.json({ limit: '1mb' }))
 
